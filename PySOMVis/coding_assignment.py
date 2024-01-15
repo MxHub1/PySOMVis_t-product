@@ -36,11 +36,18 @@ def TopoProd(_m, _n, _weights, k=None):  # noqa
 if __name__ == "__main__":
     import seaborn as sns
     import matplotlib.pyplot as plt
-    idata_path = os.path.join("datasets", "iris", "iris.vec")
-    weights_path = os.path.join("datasets", "iris", "iris.wgt.gz")
-    idata = SOMToolBox_Parse(idata_path).read_weight_file()
+    weights_path = os.path.join("datasets", "chainlink", "chainlink.wgt.gz")
     weights = SOMToolBox_Parse(weights_path).read_weight_file()
     tp = TopoProd(weights['xdim'], weights['ydim'], weights['arr'], k=1)
-    print(tp[:, :, 0])
-    sns.heatmap(tp[:, :, 1])
+    N = len(weights['arr'])
+    P = tp[..., 2].sum() / (N * (N - 1))
+    print(P)
+    # plot all components
+    fig, axs = plt.subplots(ncols=3, figsize=(15, 5))
+    sns.heatmap(tp[..., 0], ax=axs[0])
+    axs[0].set_title('tp[...,0]')
+    sns.heatmap(tp[..., 1], ax=axs[1])
+    axs[1].set_title('tp[...,1]')
+    sns.heatmap(tp[..., 2], ax=axs[2])
+    axs[2].set_title('tp[...,2]')
     plt.show()
