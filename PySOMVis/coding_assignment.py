@@ -4,6 +4,8 @@ from SOMToolBox_Parse import SOMToolBox_Parse
 
 
 def TopoProd(_m, _n, _weights, k=None):  # noqa
+    if _weights.ndim == 3:
+        _weights = _weights.reshape(-1, _weights.shape[-1])
     if k is None:
         k = len(_weights) - 1
     k = min(k, len(_weights) - 1)
