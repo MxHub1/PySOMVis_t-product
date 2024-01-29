@@ -1,5 +1,7 @@
 import numpy as np
 import os
+
+from PySOMVis.minisom import MiniSom
 from SOMToolBox_Parse import SOMToolBox_Parse
 
 
@@ -82,11 +84,14 @@ def TopoProd(_m, _n, _weights, k=None):  # noqa
         # to get the first component of the topographic product for the current unit,
         # we calculate the product of all distortion values per neighbor and take the k-th root.
         # for input space
-        p1 = np.prod(q1) ** (1 / k)
+        prod_1 = np.prod(q1, dtype=np.longfloat)
+        p1 = prod_1 ** (1 / k)
         # for output space
-        p2 = np.prod(q2) ** (1 / k)
+        prod_2 = np.prod(q2, dtype=np.longfloat)
+        p2 = prod_2 ** (1 / k)
         # for both spaces - the geometric mean of the distortion in input space and output space
-        p3 = np.prod(q1 * q2) ** (1 / (2 * k))
+        prod_3 = np.prod(q1 * q2, dtype=np.longfloat)
+        p3 = prod_3 ** (1 / (2 * k))
 
         # finally we store the topographic product components for the current unit in the result array.
         P[tuple(out_pos)] = p1, p2, p3
@@ -97,26 +102,38 @@ def TopoProd(_m, _n, _weights, k=None):  # noqa
 
 
 if __name__ == "__main__":
+    import time
     import seaborn as sns
     import matplotlib.pyplot as plt
-    weights_path = os.path.join("datasets", "chainlink", "chainlink.wgt.gz")
-    dirname = os.path.dirname(__file__)
-    filename = os.path.join(dirname, weights_path)
-    weights = SOMToolBox_Parse(filename).read_weight_file()
-    tp = TopoProd(weights['xdim'], weights['ydim'], weights['arr'], k=6)
-    N = len(weights['arr'])
-    P = tp[..., 2].sum() / (N * (N - 1))
-    print(P)
-    # plot all components
-    p1 = tp[..., 0]
-    p2 = tp[..., 1]
-    p3 = tp[..., 2]
 
+    start_time = time.time()
+    print("loading data...")
+    chainlink_idata_path = os.path.join("datasets", "chainlink", "chainlink.vec")
+    chainlink_idata = SOMToolBox_Parse(chainlink_idata_path).read_weight_file()
+    print(f"Data loaded in {time.time() - start_time:.2f} seconds")
+
+    start_time = time.time()
+    print("training...")
+    m, n = 100, 60
+    som = MiniSom(m, n, 3)
+    som.train(chainlink_idata['arr'], 10000)
+    print(f"Training completed in {time.time() - start_time:.2f} seconds")
+
+    start_time = time.time()
+    print("calculating topographic product...")
+    np.seterr(all='raise')
+    tp = TopoProd(m, n, som._weights, k=8)
+    N = m * n
+    P = tp[..., 2].sum() / (N * (N - 1))
+    print(f"Topographic product calculated in {time.time() - start_time:.2f} seconds")
+    print("P =", P)
+
+    # plot all components
     fig, axs = plt.subplots(ncols=3, figsize=(15, 5))
-    sns.heatmap(p1, ax=axs[0])
+    sns.heatmap(tp[..., 0], ax=axs[0])
     axs[0].set_title('tp[...,0]')
-    sns.heatmap(p2, ax=axs[1])
+    sns.heatmap(tp[..., 1], ax=axs[1])
     axs[1].set_title('tp[...,1]')
-    sns.heatmap(p3, ax=axs[2])
+    sns.heatmap(tp[..., 2], ax=axs[2])
     axs[2].set_title('tp[...,2]')
     plt.show()
