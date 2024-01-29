@@ -4,6 +4,27 @@ from SOMToolBox_Parse import SOMToolBox_Parse
 
 
 def TopoProd(_m, _n, _weights, k=None):  # noqa
+    """
+    Calculates the topographic product components for each unit in a Self-Organizing Map (SOM).
+
+    This function calculates the topographic product components for each unit in a SOM. The topographic product is a
+    measure of the topographic quality of a SOM. It is calculated based on the distortions in the input and output
+    spaces for the k nearest neighbors of each unit in the SOM.
+
+    Args:
+        _m (int): The number of rows in the SOM grid.
+        _n (int): The number of columns in the SOM grid.
+        _weights (numpy.ndarray): The weights of the SOM units. If the weights are in shape (m, n, d), they are reshaped
+                                   to a 2D array. The weights represent the position of the units in the input space.
+        k (int, optional): The number of nearest neighbors to consider when calculating the topographic product.
+                            If not provided, the maximum possible value is used.
+
+    Returns:
+        numpy.ndarray: A 3D array of shape (_m, _n, 3) containing the topographic product components for each unit in
+                       the SOM. The first component is the distortion in the input space, the second component is the
+                       distortion in the output space, and the third component is the geometric mean of the distortion
+                       in the input space and the output space.
+    """
     # First we need to reshape the weights to a 2D array, if they are in shape (m, n, d),
     # like for example the minisom output.
     if _weights.ndim == 3:
@@ -53,9 +74,9 @@ def TopoProd(_m, _n, _weights, k=None):  # noqa
         # q1 now holds the distortion in input space, per neighbor.
 
         # we repeat this process for the output space
-        dist_out_knn_out = np.linalg.norm(output_space[knn_out] - out_pos, axis=1)[1:]
-        dist_out_knn_inp = np.linalg.norm(output_space[knn_inp] - out_pos, axis=1)[1:]
-        q2 = dist_out_knn_out[:k] / dist_out_knn_inp[:k]
+        distance_out_knn_out = np.linalg.norm(output_space[knn_out] - out_pos, axis=1)
+        distance_out_knn_inp = np.linalg.norm(output_space[knn_inp] - out_pos, axis=1)
+        q2 = distance_out_knn_out[:k] / distance_out_knn_inp[:k]
         # q2 now holds the distortion in output space, per neighbor.
 
         # to get the first component of the topographic product for the current unit,
@@ -82,7 +103,7 @@ if __name__ == "__main__":
     dirname = os.path.dirname(__file__)
     filename = os.path.join(dirname, weights_path)
     weights = SOMToolBox_Parse(filename).read_weight_file()
-    tp = TopoProd(weights['xdim'], weights['ydim'], weights['arr'], k=1)
+    tp = TopoProd(weights['xdim'], weights['ydim'], weights['arr'], k=6)
     N = len(weights['arr'])
     P = tp[..., 2].sum() / (N * (N - 1))
     print(P)
