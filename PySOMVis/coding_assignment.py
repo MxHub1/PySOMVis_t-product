@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from PySOMVis.minisom import MiniSom
+from minisom import MiniSom
 from SOMToolBox_Parse import SOMToolBox_Parse
 
 
